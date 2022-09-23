@@ -4,19 +4,28 @@ import DeepL from './services/DeepL'
 import FirebasePersistence from './services/FirebasePersistor'
 import SlackMessenger from './services/SlackMessenger'
 import Yaksel from './services/Yaksel'
-import {appConfig} from './models/AppConfig'
+import {getAppConfig} from './models/GetAppConfig'
 
-const translator = new DeepL(appConfig.deepl.apikey)
-const persistor = new FirebasePersistence(appConfig.app.realtime_database_url)
-const messenger = new SlackMessenger(appConfig.slack.apikey)
-const logger = functions.logger
+let __yaksel: Yaksel
 
-const yaksel = new Yaksel({
-  translator: translator,
-  persistor: persistor,
-  messenger: messenger,
-  logger: logger,
-})
+async function getYakselInstance() {
+  if (!__yaksel) {
+    const appConfig = await getAppConfig()
+
+    const translator = new DeepL(appConfig.deepl.apikey)
+    const persistor = new FirebasePersistence(appConfig.app.realtime_database_url)
+    const messenger = new SlackMessenger(appConfig.slack.apikey)
+    const logger = functions.logger
+
+    __yaksel = new Yaksel({
+      translator: translator,
+      persistor: persistor,
+      messenger: messenger,
+      logger: logger,
+    })
+  }
+  return __yaksel
+}
 
 export const translate = functions.https.onRequest(async (req, res) => {
   const {challenge, event} = req.body
@@ -26,6 +35,6 @@ export const translate = functions.https.onRequest(async (req, res) => {
     return
   }
 
-  await yaksel.handleEvent(event)
+  await (await getYakselInstance()).handleEvent(event)
   res.send({message: 'success'})
 })

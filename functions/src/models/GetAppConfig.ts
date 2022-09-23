@@ -12,12 +12,12 @@ export interface AppConfig {
   }
 }
 
-export const appConfig = (() => {
+export async function getAppConfig() {
   if (process.env.NODE_ENV === 'development') {
     console.info('Using local .appConfig.local')
-    return require('../.appConfig.local.ts').appConfig
+    const localConfig = await import('../.appConfig.local')
+    return localConfig.appConfig
   }
   console.info('Using functions config')
   return functions.config() as AppConfig
-})()
-
+}

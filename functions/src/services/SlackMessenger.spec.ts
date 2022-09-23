@@ -1,9 +1,10 @@
 import SlackMessenger from './SlackMessenger'
-import {appConfig} from '../models/AppConfig'
+import {getAppConfig} from '../models/GetAppConfig'
 
 let messenger: SlackMessenger
 
-beforeEach(() => {
+beforeEach(async () => {
+  const appConfig = await getAppConfig()
   messenger = new SlackMessenger(appConfig.slack.apikey)
 })
 
