@@ -16,6 +16,14 @@ export const TARGET_LANGUAGES: { [key: string]: SUPPORTED_LANGUAGE} = {
   'vietnamese': 'vn',
 }
 
+function getLanguageNameByKey(key: SUPPORTED_LANGUAGE): string {
+  const fullName = Object.keys(TARGET_LANGUAGES).find((k) => TARGET_LANGUAGES[k] === key)
+  if (!fullName) {
+    throw Error(`Unsupported language '${key}'`)
+  }
+  return fullName[0].toUpperCase() + fullName.slice(1)
+}
+
 export interface Persistor {
   select: <T>(key: string) => Promise<T>;
   upsert: <T>(key: string, value: T) => Promise<void>;
@@ -158,37 +166,59 @@ export default class Yaksel {
   readonly autotranslateEnablePattern = /enable autotranslate (<@)?([\dA-Z]+)(>)? into (en|ja|vn)+/
   readonly autotranslateDisablePattern = /disable autotranslate (<@)?([\dA-Z]+)(>)?/
 
-  async handleAppMention({text}: SlackEvent) {
+  async handleAppMention({text, channel}: SlackEvent) {
     invariant(text, 'Missing text')
 
     const enable = text.match(this.autotranslateEnablePattern)
     if (enable) {
-      await this.enableAutoTranslate(enable[2], enable[4] as SUPPORTED_LANGUAGE)
+      const [, , userId, , targetLanguage] = enable
+      await this.enableAutoTranslate(userId, targetLanguage as SUPPORTED_LANGUAGE, channel)
       return
     }
 
     const disable = text.match(this.autotranslateDisablePattern)
     if (disable) {
-      await this.disableAutoTranslate(disable[2])
+      await this.disableAutoTranslate(disable[2], channel)
       return
     }
     this.logger.warn('Called with wrong arugment')
   }
 
-  async enableAutoTranslate(userId: string, targetLanguage: SUPPORTED_LANGUAGE) {
+  async enableAutoTranslate(userId: string, targetLanguage: SUPPORTED_LANGUAGE, channel?: string) {
     const userInfo = await this.messenger.fetchUser(userId)
     invariant(userInfo, `Failed to fetch user '${userId}'. Ignoring`)
     const userOrBotId = userInfo.isBot ? userInfo.botId : userInfo.id
     const key = `/autotranslate/${userOrBotId}`
     await this.persistor.upsert(key, targetLanguage)
+    if (channel) {
+      await this.notifyEnabled(channel, userInfo.name, targetLanguage)
+    }
   }
 
-  async disableAutoTranslate(userId: string) {
+  async notifyEnabled(channel: string, userName: string, targetLanguage: SUPPORTED_LANGUAGE) {
+    const languageName = getLanguageNameByKey(targetLanguage)
+    await this.messenger.postMessage(channel, {
+      text: `You got it! All message from ${userName} will be automatically translated to ${languageName}`,
+      reply_broadcast: false,
+    })
+  }
+
+  async disableAutoTranslate(userId: string, channel?: string) {
     const userInfo = await this.messenger.fetchUser(userId)
     invariant(userInfo, `Failed to fetch user '${userId}'. Ignoring`)
     const userOrBotId = userInfo.isBot ? userInfo.botId : userInfo.id
     const key = `/autotranslate/${userOrBotId}`
     await this.persistor.upsert(key, false)
+    if (channel) {
+      await this.notifyDisabled(channel, userInfo.name)
+    }
+  }
+
+  async notifyDisabled(channel: string, userName: string) {
+    await this.messenger.postMessage(channel, {
+      text: `You got it! Auto-translate disabled for ${userName}`,
+      reply_broadcast: false,
+    })
   }
 
   async handleAutotranslate(event: SlackEvent) {

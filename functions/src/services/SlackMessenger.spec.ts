@@ -15,6 +15,7 @@ describe('SlackMessenger', () => {
       id: 'U03J9FTHH8B',
       isBot: true,
       botId: 'B03J6LUQCFP',
+      name: 'HubSpot',
     })
   })
 })

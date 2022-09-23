@@ -108,16 +108,18 @@ describe('Yaksel', () => {
     yaksel.messenger.fetchUser = jest.fn(() => Promise.resolve({
       id: 'U1234567890',
       isBot: false,
+      name: 'Yusuke',
     }))
     await yaksel.handleEvent({
       type: 'app_mention',
       text: '/<@U1234567890> enable autotranslate <@U1234567890> into en',
-      item: {
-        channel: 'test',
-        ts: '1234',
-      },
+      channel: 'test',
     })
     expect(await yaksel.persistor.select<boolean>('/autotranslate/U1234567890')).toBe('en')
+    expect(await yaksel.messenger.postMessage).toBeCalledWith('test', {
+      text: 'You got it! All message from Yusuke will be automatically translated to English',
+      reply_broadcast: false,
+    })
   })
 
   it('should enable auto translate bot', async () => {
@@ -125,36 +127,40 @@ describe('Yaksel', () => {
       id: 'U03J9FTHH8B',
       isBot: true,
       botId: 'B03J6LUQCFP',
+      name: 'PandaBot',
     }))
 
     await yaksel.handleEvent({
       type: 'app_mention',
       text: '<@U1234567890> enable autotranslate <@U03J9FTHH8B> into en',
-      item: {
-        channel: 'test',
-        ts: '1234',
-      },
+      channel: 'test',
     })
 
     expect(await yaksel.persistor.select<boolean>('/autotranslate/B03J6LUQCFP')).toBe('en')
+    expect(await yaksel.messenger.postMessage).toBeCalledWith('test', {
+      text: 'You got it! All message from PandaBot will be automatically translated to English',
+      reply_broadcast: false,
+    })
   })
 
   it('should disable auto translate', async () => {
     yaksel.messenger.fetchUser = jest.fn(() => Promise.resolve({
       id: 'U1234567890',
       isBot: false,
+      name: 'Yusuke',
     }))
 
     await yaksel.persistor.upsert('/autotranslate/U1234567890', 'en')
     await yaksel.handleEvent({
       type: 'app_mention',
       text: '/<@U1234567890> disable autotranslate <@U1234567890>',
-      item: {
-        channel: 'test',
-        ts: '1234',
-      },
+      channel: 'test',
     })
     expect(await yaksel.persistor.select<boolean>('/autotranslate/U1234567890')).toBeFalsy()
+    expect(await yaksel.messenger.postMessage).toBeCalledWith('test', {
+      text: 'You got it! Auto-translate disabled for Yusuke',
+      reply_broadcast: false,
+    })
   })
 
   it('should disable auto translate bot', async () => {
@@ -162,18 +168,20 @@ describe('Yaksel', () => {
       id: 'U03J9FTHH8B',
       isBot: true,
       botId: 'B03J6LUQCFP',
+      name: 'PandaBot',
     }))
 
     await yaksel.persistor.upsert('/autotranslate/B03J6LUQCFP', 'en')
     await yaksel.handleEvent({
       type: 'app_mention',
       text: '/<@U1234567890> disable autotranslate <@U03J9FTHH8B>',
-      item: {
-        channel: 'test',
-        ts: '1234',
-      },
+      channel: 'test',
     })
     expect(await yaksel.persistor.select<boolean>('/autotranslate/B03J6LUQCFP')).toBeFalsy()
+    expect(await yaksel.messenger.postMessage).toBeCalledWith('test', {
+      text: 'You got it! Auto-translate disabled for PandaBot',
+      reply_broadcast: false,
+    })
   })
 
   it('should not auto translate if user is not registered', async () => {

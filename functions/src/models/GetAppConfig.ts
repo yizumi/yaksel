@@ -13,7 +13,8 @@ export interface AppConfig {
 }
 
 export async function getAppConfig() {
-  if (process.env.NODE_ENV === 'development') {
+  if (process.env.NODE_ENV === 'development' ||
+      process.env.NODE_ENV === 'test') {
     console.info('Using local .appConfig.local')
     const localConfig = await import('../.appConfig.local')
     return localConfig.appConfig

@@ -41,4 +41,5 @@ export interface UserInfo {
   id: string
   isBot: boolean
   botId?: string
+  name: string
 }

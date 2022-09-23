@@ -71,6 +71,7 @@ export default class SlackMessenger implements Messenger {
       id: userId,
       isBot: !!user.is_bot,
       botId: user.profile?.bot_id,
+      name: user.profile?.real_name_normalized || '(noname)',
     }
   }
 }
