@@ -108,3 +108,49 @@ The value indicates the target language for the translation.
   |-B02XXXXXX: "ja"
 ```
 
+## Slack Bot Settings
+
+The Slack bot settings can be tricky, here's the basic settings in Json app manifest format:
+```
+{
+    "display_information": {
+        "name": "yaksel",
+        "description": "Your nifty translator powered by DeepL",
+        "background_color": "#004492"
+    },
+    "features": {
+        "bot_user": {
+            "display_name": "yaksel",
+            "always_online": false
+        }
+    },
+    "oauth_config": {
+        "scopes": {
+            "bot": [
+                "channels:history",
+                "chat:write",
+                "chat:write.customize",
+                "groups:history",
+                "im:history",
+                "mpim:history",
+                "reactions:read",
+                "users:read",
+                "app_mentions:read"
+            ]
+        }
+    },
+    "settings": {
+        "event_subscriptions": {
+            "request_url": "https://us-central1-yaksel-XXXXX.cloudfunctions.net/translate",
+            "bot_events": [
+                "app_mention",
+                "message.channels",
+                "reaction_added"
+            ]
+        },
+        "org_deploy_enabled": false,
+        "socket_mode_enabled": false,
+        "token_rotation_enabled": false
+    }
+}
+```
